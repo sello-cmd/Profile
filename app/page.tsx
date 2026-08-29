@@ -11,7 +11,6 @@ import { TechArsenal } from "@/components/skills/TechArsenal";
 import { ExperienceSection } from "@/components/experience/ExperienceSection";
 import { ClientFAQ } from "@/components/faq/ClientFAQ";
 import { InquiryForm } from "@/components/contact/InquiryForm";
-import { OwnerDashboard } from "@/components/admin/OwnerDashboard";
 import { Footer } from "@/components/layout/Footer";
 import { CalModal } from "@/components/contact/CalModal";
 import { ResumeModal } from "@/components/contact/ResumeModal";
@@ -200,18 +199,6 @@ export default function Home() {
                   onOpenCal={() => setCalModalOpen(true)}
                   initialService={selectedService}
                 />
-              </motion.div>
-            )}
-
-            {activeTab === "owner" && (
-              <motion.div
-                key="owner"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.25 }}
-              >
-                <OwnerDashboard />
               </motion.div>
             )}
           </AnimatePresence>

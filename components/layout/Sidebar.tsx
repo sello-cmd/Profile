@@ -60,7 +60,6 @@ export function Sidebar({
     { id: "experience", label: "Experience & Awards", icon: Trophy, badge: "CEO" },
     { id: "faq", label: "FAQ", icon: HelpCircle, badge: "Info" },
     { id: "inquire", label: "Contact & Inquiries", icon: Send, badge: "Direct" },
-    { id: "owner", label: "Founder Portal", icon: ShieldCheck, badge: "Admin" },
   ];
 
   const handleTabClick = (id: NavTabId) => {
