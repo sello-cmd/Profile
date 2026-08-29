@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="jadeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="50%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="borderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#059669" stop-opacity="0.3" />
+    </linearGradient>
+    <filter id="jadeGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#34d399" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Dark Rounded Squircle Badge -->
+  <rect x="1" y="1" width="30" height="30" rx="8" fill="#070709" stroke="url(#borderGradient)" stroke-width="1.5" />
+
+  <!-- Modern Geometric Jade Monogram 'S' -->
+  <g filter="url(#jadeGlow)">
+    <path 
+      d="M 21.5 9.5 
+         H 13 
+         C 10.5 9.5 9.5 11 9.5 12.5 
+         C 9.5 14.5 11 15.5 13.5 16 
+         L 18.5 17 
+         C 21 17.5 22.5 18.5 22.5 20.5 
+         C 22.5 22.5 21 23.5 18.5 23.5 
+         H 10 
+         M 10 23.5 L 10 21" 
+      fill="none" 
+      stroke="url(#jadeGradient)" 
+      stroke-width="3" 
+      stroke-linecap="round" 
+      stroke-linejoin="round" 
+    />
+    <!-- Accent Spark Core Dot -->
+    <circle cx="21.5" cy="9.5" r="1.5" fill="#34d399" />
+    <circle cx="10" cy="23.5" r="1.5" fill="#34d399" />
+  </g>
+</svg>

@@ -27,9 +27,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Engr. Sean Lloyd E. Casalme | Founder & CEO, ChampZero Esports | Computer Engineer",
+  title: "Connect - Engr. Sean Lloyd E. Casalme",
   description:
     "Founder & CEO of ChampZero Esports Organization & Entertainment Production. Full-Stack Web Developer, Digital Marketing Strategist, and Visual Designer with a strong Computer Engineering background.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg"
+  },
   keywords: [
     "Engr. Sean Lloyd E. Casalme",
     "Engr. Sean Casalme",
@@ -49,7 +54,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Engr. Sean Lloyd E. Casalme" }],
   openGraph: {
-    title: "Engr. Sean Lloyd E. Casalme | Founder & CEO, ChampZero Esports | Computer Engineer",
+    title: "Connect - Engr. Sean Lloyd E. Casalme",
     description:
       "Founder & CEO of ChampZero Esports Organization & Entertainment Production. Full-Stack Web Developer and Visual Designer.",
     type: "website",
@@ -57,7 +62,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Engr. Sean Lloyd E. Casalme | Founder & CEO, ChampZero Esports | Computer Engineer",
+    title: "Connect - Engr. Sean Lloyd E. Casalme",
     description:
       "Founder & CEO of ChampZero Esports Organization & Entertainment Production. Full-Stack Web Developer and Visual Designer.",
   },
