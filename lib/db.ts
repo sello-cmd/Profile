@@ -38,16 +38,7 @@ export interface DbChatMessage {
   phone?: string;
 }
 
-// Determine writable DB directory: On Vercel / serverless use os.tmpdir(), locally use process.cwd()/data/db
-const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-const DB_DIR = isServerless 
-  ? path.join(os.tmpdir(), "sean_portfolio_db")
-  : path.join(process.cwd(), "data", "db");
-
-const INQUIRIES_FILE = path.join(DB_DIR, "inquiries.json");
-const BOOKINGS_FILE = path.join(DB_DIR, "bookings.json");
-
-// In-Memory Fallback & Cache (guarantees zero-downtime on read-only environments)
+// Initial Data
 const initialInquiriesData: DbInquiry[] = [
   {
     id: "inq-01",
@@ -117,18 +108,33 @@ const initialBookingsData: DbBooking[] = [
   }
 ];
 
+// In-Memory Master Store
 let inMemoryInquiries: DbInquiry[] = [...initialInquiriesData];
 let inMemoryBookings: DbBooking[] = [...initialBookingsData];
 
+function getDbPaths() {
+  const isProduction = process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL) || process.platform !== "win32";
+  const dbDir = isProduction
+    ? path.join(os.tmpdir(), "slec_db")
+    : path.join(process.cwd(), "data", "db");
+
+  return {
+    dir: dbDir,
+    inquiries: path.join(dbDir, "inquiries.json"),
+    bookings: path.join(dbDir, "bookings.json"),
+  };
+}
+
 function safeWrite(filePath: string, content: string) {
   try {
-    if (!fs.existsSync(DB_DIR)) {
-      fs.mkdirSync(DB_DIR, { recursive: true });
+    const { dir } = getDbPaths();
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
     fs.writeFileSync(filePath, content, "utf-8");
   } catch (err) {
-    // Graceful fallback on serverless environments without crashing
-    console.warn(`[Storage Warning] File write failed for ${filePath}, falling back to memory store:`, err);
+    // Graceful fallback to memory store
+    console.warn(`[Safe Storage] File write fallback:`, err);
   }
 }
 
@@ -139,17 +145,22 @@ function safeRead<T>(filePath: string, fallback: T): T {
       return JSON.parse(raw);
     }
   } catch (err) {
-    console.warn(`[Storage Warning] File read failed for ${filePath}:`, err);
+    console.warn(`[Safe Storage] File read fallback:`, err);
   }
   return fallback;
 }
 
 // INQUIRY OPERATIONS
 export function getInquiries(): DbInquiry[] {
-  const fromFile = safeRead<DbInquiry[] | null>(INQUIRIES_FILE, null);
-  if (fromFile && fromFile.length > 0) {
-    inMemoryInquiries = fromFile;
-    return fromFile;
+  try {
+    const { inquiries } = getDbPaths();
+    const fromFile = safeRead<DbInquiry[] | null>(inquiries, null);
+    if (fromFile && Array.isArray(fromFile) && fromFile.length > 0) {
+      inMemoryInquiries = fromFile;
+      return fromFile;
+    }
+  } catch (e) {
+    console.warn("[DB] Inquiries read exception:", e);
   }
   return inMemoryInquiries;
 }
@@ -162,8 +173,13 @@ export function createInquiry(data: Omit<DbInquiry, "id" | "createdAt" | "status
     status: "New",
   };
 
-  inMemoryInquiries.unshift(newInquiry);
-  safeWrite(INQUIRIES_FILE, JSON.stringify(inMemoryInquiries, null, 2));
+  try {
+    inMemoryInquiries.unshift(newInquiry);
+    const { inquiries } = getDbPaths();
+    safeWrite(inquiries, JSON.stringify(inMemoryInquiries, null, 2));
+  } catch (e) {
+    console.warn("[DB] Inquiry write exception:", e);
+  }
   return newInquiry;
 }
 
@@ -174,7 +190,12 @@ export function updateInquiryStatus(id: string, status: DbInquiry["status"]): Db
 
   inquiries[index].status = status;
   inMemoryInquiries = inquiries;
-  safeWrite(INQUIRIES_FILE, JSON.stringify(inquiries, null, 2));
+  try {
+    const { inquiries: inqPath } = getDbPaths();
+    safeWrite(inqPath, JSON.stringify(inquiries, null, 2));
+  } catch (e) {
+    console.warn("[DB] Inquiry update exception:", e);
+  }
   return inquiries[index];
 }
 
@@ -184,16 +205,26 @@ export function deleteInquiry(id: string): boolean {
   if (filtered.length === inquiries.length) return false;
 
   inMemoryInquiries = filtered;
-  safeWrite(INQUIRIES_FILE, JSON.stringify(filtered, null, 2));
+  try {
+    const { inquiries: inqPath } = getDbPaths();
+    safeWrite(inqPath, JSON.stringify(filtered, null, 2));
+  } catch (e) {
+    console.warn("[DB] Inquiry delete exception:", e);
+  }
   return true;
 }
 
 // BOOKING OPERATIONS
 export function getBookings(): DbBooking[] {
-  const fromFile = safeRead<DbBooking[] | null>(BOOKINGS_FILE, null);
-  if (fromFile && fromFile.length > 0) {
-    inMemoryBookings = fromFile;
-    return fromFile;
+  try {
+    const { bookings } = getDbPaths();
+    const fromFile = safeRead<DbBooking[] | null>(bookings, null);
+    if (fromFile && Array.isArray(fromFile) && fromFile.length > 0) {
+      inMemoryBookings = fromFile;
+      return fromFile;
+    }
+  } catch (e) {
+    console.warn("[DB] Bookings read exception:", e);
   }
   return inMemoryBookings;
 }
@@ -229,8 +260,13 @@ export function createBooking(data: Omit<DbBooking, "id" | "createdAt" | "status
     status: "Confirmed",
   };
 
-  inMemoryBookings.unshift(newBooking);
-  safeWrite(BOOKINGS_FILE, JSON.stringify(inMemoryBookings, null, 2));
+  try {
+    inMemoryBookings.unshift(newBooking);
+    const { bookings } = getDbPaths();
+    safeWrite(bookings, JSON.stringify(inMemoryBookings, null, 2));
+  } catch (e) {
+    console.warn("[DB] Booking write exception:", e);
+  }
   return newBooking;
 }
 
@@ -241,7 +277,12 @@ export function updateBookingStatus(id: string, status: DbBooking["status"]): Db
 
   bookings[index].status = status;
   inMemoryBookings = bookings;
-  safeWrite(BOOKINGS_FILE, JSON.stringify(bookings, null, 2));
+  try {
+    const { bookings: bkPath } = getDbPaths();
+    safeWrite(bkPath, JSON.stringify(bookings, null, 2));
+  } catch (e) {
+    console.warn("[DB] Booking update exception:", e);
+  }
   return bookings[index];
 }
 
@@ -251,6 +292,11 @@ export function deleteBooking(id: string): boolean {
   if (filtered.length === bookings.length) return false;
 
   inMemoryBookings = filtered;
-  safeWrite(BOOKINGS_FILE, JSON.stringify(filtered, null, 2));
+  try {
+    const { bookings: bkPath } = getDbPaths();
+    safeWrite(bkPath, JSON.stringify(filtered, null, 2));
+  } catch (e) {
+    console.warn("[DB] Booking delete exception:", e);
+  }
   return true;
 }
