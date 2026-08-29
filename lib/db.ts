@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { firestoreDb, isFirebaseConfigured } from "./firebase";
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 
 export interface DbInquiry {
   id: string;
@@ -38,7 +40,7 @@ export interface DbChatMessage {
   phone?: string;
 }
 
-// Clean Fresh Database (Zero bots, records only real submissions)
+// Clean Fresh Database (Records only real submissions)
 const initialInquiriesData: DbInquiry[] = [];
 const initialBookingsData: DbBooking[] = [];
 
@@ -67,7 +69,6 @@ function safeWrite(filePath: string, content: string) {
     }
     fs.writeFileSync(filePath, content, "utf-8");
   } catch (err) {
-    // Graceful fallback to memory store
     console.warn(`[Safe Storage] File write fallback:`, err);
   }
 }
@@ -111,6 +112,13 @@ export function createInquiry(data: Omit<DbInquiry, "id" | "createdAt" | "status
     inMemoryInquiries.unshift(newInquiry);
     const { inquiries } = getDbPaths();
     safeWrite(inquiries, JSON.stringify(inMemoryInquiries, null, 2));
+
+    // Async Firebase Firestore Sync (if configured)
+    if (firestoreDb && isFirebaseConfigured) {
+      addDoc(collection(firestoreDb, "inquiries"), newInquiry).catch((err) =>
+        console.warn("[Firebase] Error saving inquiry to Firestore:", err)
+      );
+    }
   } catch (e) {
     console.warn("[DB] Inquiry write exception:", e);
   }
@@ -198,6 +206,13 @@ export function createBooking(data: Omit<DbBooking, "id" | "createdAt" | "status
     inMemoryBookings.unshift(newBooking);
     const { bookings } = getDbPaths();
     safeWrite(bookings, JSON.stringify(inMemoryBookings, null, 2));
+
+    // Async Firebase Firestore Sync (if configured)
+    if (firestoreDb && isFirebaseConfigured) {
+      addDoc(collection(firestoreDb, "bookings"), newBooking).catch((err) =>
+        console.warn("[Firebase] Error saving booking to Firestore:", err)
+      );
+    }
   } catch (e) {
     console.warn("[DB] Booking write exception:", e);
   }
