@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { InquiryFormSchema } from "@/types/portfolio";
 import { Resend } from "resend";
-import { getInquiries, createInquiry } from "@/lib/db";
+import { getInquiriesAsync, createInquiryAsync } from "@/lib/db";
 
 // Optional: Resend API initialization
 const resendApiKey = process.env.RESEND_API_KEY;
@@ -11,7 +11,7 @@ const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || "casalmeseanlloyd@g
 // GET /api/inquire - Fetch all inquiries from database
 export async function GET() {
   try {
-    const inquiries = getInquiries();
+    const inquiries = await getInquiriesAsync();
     return NextResponse.json({
       success: true,
       data: inquiries,
@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
     const { fullName, email, company, handle, projectTypes, budget, timeline, scope } =
       validationResult.data;
 
-    // 2. Persist to Database
-    const savedInquiry = createInquiry({
+    // 2. Persist to Database & Firebase Firestore
+    const savedInquiry = await createInquiryAsync({
       fullName,
       email,
       company,
@@ -95,10 +95,6 @@ export async function POST(req: NextRequest) {
         html: emailHtml,
         replyTo: email,
       });
-    } else {
-      console.log("================ NEW INQUIRY SAVED TO DATABASE ================");
-      console.log(JSON.stringify(savedInquiry, null, 2));
-      console.log("===============================================================");
     }
 
     return NextResponse.json(

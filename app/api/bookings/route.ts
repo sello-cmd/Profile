@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBookings, createBooking, getBookedSlots } from "@/lib/db";
+import { getBookingsAsync, createBookingAsync, getBookedSlots } from "@/lib/db";
 
 // GET /api/bookings - List all bookings & booked slots
 export async function GET(req: NextRequest) {
@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
 
-    const bookings = getBookings();
+    const bookings = await getBookingsAsync();
     const bookedSlots = getBookedSlots(dateParam || undefined);
 
     return NextResponse.json({
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const savedBooking = createBooking({
+    const savedBooking = await createBookingAsync({
       name: name.trim(),
       email: email.trim(),
       type: type || "15-Min Intro & Discovery Call",
