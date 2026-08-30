@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 
-// Default Founder Master PIN (Can be customized via OWNER_PIN env variable)
-const OWNER_PIN = process.env.OWNER_PIN || "1006020405";
-const AUTH_SECRET = process.env.AUTH_SECRET || "founder_secret_key_champzero_2026";
+// Founder Master PIN & Secret purely loaded from Environment Variables (never in git)
+const OWNER_PIN = process.env.OWNER_PIN || "";
+const AUTH_SECRET = process.env.AUTH_SECRET || "";
 
 // Simple in-memory rate limiter to prevent brute-force attempts
 const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
