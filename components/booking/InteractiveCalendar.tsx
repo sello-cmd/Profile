@@ -7,9 +7,12 @@ import { Badge } from "@/components/ui/Badge";
 import { PROFILE_DATA } from "@/data/portfolioData";
 import confetti from "canvas-confetti";
 
+import { getUpcomingBookingDates, RollingBookingDate } from "@/lib/utils";
+
 export function InteractiveCalendar() {
   const [meetingType, setMeetingType] = useState<"15min" | "30min" | "60min">("15min");
-  const [selectedDate, setSelectedDate] = useState<string>("2026-09-01");
+  const [availableDates, setAvailableDates] = useState<RollingBookingDate[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("10:30 AM (UTC+8)");
   const [platform, setPlatform] = useState<"Google Meet" | "WhatsApp" | "Phone">("Google Meet");
   const [name, setName] = useState("");
@@ -36,6 +39,11 @@ export function InteractiveCalendar() {
 
   useEffect(() => {
     fetchBookedSlots();
+    const dynamicDates = getUpcomingBookingDates(7);
+    setAvailableDates(dynamicDates);
+    if (dynamicDates.length > 0) {
+      setSelectedDate(dynamicDates[0].value);
+    }
   }, []);
 
   const meetingDetails = {
@@ -58,16 +66,6 @@ export function InteractiveCalendar() {
       duration: "60 Minutes"
     }
   };
-
-  const availableDates = [
-    { day: "Mon", dateStr: "Sep 01", value: "2026-09-01" },
-    { day: "Tue", dateStr: "Sep 02", value: "2026-09-02" },
-    { day: "Wed", dateStr: "Sep 03", value: "2026-09-03" },
-    { day: "Thu", dateStr: "Sep 04", value: "2026-09-04" },
-    { day: "Fri", dateStr: "Sep 05", value: "2026-09-05" },
-    { day: "Mon", dateStr: "Sep 08", value: "2026-09-08" },
-    { day: "Tue", dateStr: "Sep 09", value: "2026-09-09" }
-  ];
 
   const allTimeWindows = [
     "09:30 AM (UTC+8)",

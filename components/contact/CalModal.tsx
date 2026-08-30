@@ -7,13 +7,16 @@ import { Badge } from "@/components/ui/Badge";
 import { PROFILE_DATA } from "@/data/portfolioData";
 import confetti from "canvas-confetti";
 
+import { getUpcomingBookingDates } from "@/lib/utils";
+
 interface CalModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function CalModal({ isOpen, onClose }: CalModalProps) {
-  const [selectedDate, setSelectedDate] = useState<string>("2026-09-01");
+  const dynamicDates = getUpcomingBookingDates(5);
+  const [selectedDate, setSelectedDate] = useState<string>(dynamicDates[0]?.value || "");
   const [selectedSlot, setSelectedSlot] = useState<string>("10:30 AM (UTC+8)");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -41,18 +44,16 @@ export function CalModal({ isOpen, onClose }: CalModalProps) {
       fetchBookedSlots();
       setIsBooked(false);
       setErrorMessage("");
+      const upcoming = getUpcomingBookingDates(5);
+      if (upcoming.length > 0) {
+        setSelectedDate(upcoming[0].value);
+      }
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const dates = [
-    { label: "Mon, Sep 01", value: "2026-09-01" },
-    { label: "Tue, Sep 02", value: "2026-09-02" },
-    { label: "Wed, Sep 03", value: "2026-09-03" },
-    { label: "Thu, Sep 04", value: "2026-09-04" },
-    { label: "Fri, Sep 05", value: "2026-09-05" },
-  ];
+  const dates = dynamicDates;
 
   const slots = [
     "09:30 AM (UTC+8)",
