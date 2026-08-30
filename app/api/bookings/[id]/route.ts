@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateBookingStatus, deleteBooking } from "@/lib/db";
+import { updateBookingStatusAsync, deleteBookingAsync } from "@/lib/db";
 
 // PATCH /api/bookings/[id] - Update booking status
 export async function PATCH(
@@ -18,7 +18,7 @@ export async function PATCH(
       );
     }
 
-    const updated = updateBookingStatus(id, status);
+    const updated = await updateBookingStatusAsync(id, status);
 
     if (!updated) {
       return NextResponse.json(
@@ -47,14 +47,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const deleted = deleteBooking(id);
-
-    if (!deleted) {
-      return NextResponse.json(
-        { success: false, message: "Booking not found" },
-        { status: 404 }
-      );
-    }
+    const deleted = await deleteBookingAsync(id);
 
     return NextResponse.json({
       success: true,

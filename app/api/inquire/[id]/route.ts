@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateInquiryStatus, deleteInquiry } from "@/lib/db";
+import { updateInquiryStatusAsync, deleteInquiryAsync } from "@/lib/db";
 
 // PATCH /api/inquire/[id] - Update inquiry status
 export async function PATCH(
@@ -18,7 +18,7 @@ export async function PATCH(
       );
     }
 
-    const updated = updateInquiryStatus(id, status);
+    const updated = await updateInquiryStatusAsync(id, status);
 
     if (!updated) {
       return NextResponse.json(
@@ -47,14 +47,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const deleted = deleteInquiry(id);
-
-    if (!deleted) {
-      return NextResponse.json(
-        { success: false, message: "Inquiry not found" },
-        { status: 404 }
-      );
-    }
+    const deleted = await deleteInquiryAsync(id);
 
     return NextResponse.json({
       success: true,

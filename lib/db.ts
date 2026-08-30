@@ -10,6 +10,7 @@ import {
   updateDoc,
   deleteDoc,
   query,
+  where,
   orderBy
 } from "firebase/firestore";
 
@@ -94,14 +95,19 @@ function safeRead<T>(filePath: string, fallback: T): T {
 // INQUIRY OPERATIONS
 // ==========================================
 export async function getInquiriesAsync(): Promise<DbInquiry[]> {
-  if (firestoreDb && isFirebaseConfigured) {
+  const db = firestoreDb;
+  if (db && isFirebaseConfigured) {
     try {
-      const colRef = collection(firestoreDb, "inquiries");
+      const colRef = collection(db, "inquiries");
       const q = query(colRef, orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
       const items: DbInquiry[] = [];
       snapshot.forEach((docSnap) => {
-        items.push(docSnap.data() as DbInquiry);
+        const data = docSnap.data() as DbInquiry;
+        items.push({
+          ...data,
+          id: data.id || docSnap.id,
+        });
       });
       if (items.length > 0) {
         inMemoryInquiries = items;
@@ -144,10 +150,10 @@ export async function createInquiryAsync(data: Omit<DbInquiry, "id" | "createdAt
     console.warn("[DB] Inquiry write exception:", e);
   }
 
-  // Firebase Firestore Direct Sync
-  if (firestoreDb && isFirebaseConfigured) {
+  const db = firestoreDb;
+  if (db && isFirebaseConfigured) {
     try {
-      await setDoc(doc(firestoreDb, "inquiries", newInquiry.id), newInquiry);
+      await setDoc(doc(db, "inquiries", newInquiry.id), newInquiry);
       console.log(`[Firebase] Inquiry ${newInquiry.id} successfully saved to Firestore!`);
     } catch (err: any) {
       console.warn("[Firebase] Error saving inquiry to Firestore (Check security rules):", err?.message);
@@ -170,8 +176,9 @@ export function createInquiry(data: Omit<DbInquiry, "id" | "createdAt" | "status
     const { inquiries } = getDbPaths();
     safeWrite(inquiries, JSON.stringify(inMemoryInquiries, null, 2));
 
-    if (firestoreDb && isFirebaseConfigured) {
-      setDoc(doc(firestoreDb, "inquiries", newInquiry.id), newInquiry).catch((err) =>
+    const db = firestoreDb;
+    if (db && isFirebaseConfigured) {
+      setDoc(doc(db, "inquiries", newInquiry.id), newInquiry).catch((err) =>
         console.warn("[Firebase] Background Firestore write error:", err?.message)
       );
     }
@@ -182,15 +189,38 @@ export function createInquiry(data: Omit<DbInquiry, "id" | "createdAt" | "status
 }
 
 export async function updateInquiryStatusAsync(id: string, status: DbInquiry["status"]): Promise<DbInquiry | null> {
-  const updated = updateInquiryStatus(id, status);
-  if (firestoreDb && isFirebaseConfigured && updated) {
+  updateInquiryStatus(id, status);
+
+  const db = firestoreDb;
+  if (db && isFirebaseConfigured) {
     try {
-      await updateDoc(doc(firestoreDb, "inquiries", id), { status });
+      await updateDoc(doc(db, "inquiries", id), { status });
     } catch (e: any) {
-      console.warn("[Firebase] Error updating inquiry in Firestore:", e?.message);
+      try {
+        const colRef = collection(db, "inquiries");
+        const q = query(colRef, where("id", "==", id));
+        const snap = await getDocs(q);
+        for (const d of snap.docs) {
+          await updateDoc(doc(db, "inquiries", d.id), { status });
+        }
+      } catch (err2) {
+        console.warn("[Firebase] Error updating inquiry:", err2);
+      }
     }
   }
-  return updated;
+
+  const found = inMemoryInquiries.find((i) => i.id === id);
+  return found || {
+    id,
+    fullName: "",
+    email: "",
+    projectTypes: [],
+    budget: "",
+    timeline: "",
+    scope: "",
+    createdAt: new Date().toISOString(),
+    status,
+  };
 }
 
 export function updateInquiryStatus(id: string, status: DbInquiry["status"]): DbInquiry | null {
@@ -210,22 +240,31 @@ export function updateInquiryStatus(id: string, status: DbInquiry["status"]): Db
 }
 
 export async function deleteInquiryAsync(id: string): Promise<boolean> {
-  const deleted = deleteInquiry(id);
-  if (firestoreDb && isFirebaseConfigured) {
+  deleteInquiry(id);
+
+  const db = firestoreDb;
+  if (db && isFirebaseConfigured) {
     try {
-      await deleteDoc(doc(firestoreDb, "inquiries", id));
+      await deleteDoc(doc(db, "inquiries", id));
     } catch (e: any) {
-      console.warn("[Firebase] Error deleting inquiry in Firestore:", e?.message);
+      try {
+        const colRef = collection(db, "inquiries");
+        const q = query(colRef, where("id", "==", id));
+        const snap = await getDocs(q);
+        for (const d of snap.docs) {
+          await deleteDoc(doc(db, "inquiries", d.id));
+        }
+      } catch (err2) {
+        console.warn("[Firebase] Error deleting inquiry:", err2);
+      }
     }
   }
-  return deleted;
+  return true;
 }
 
 export function deleteInquiry(id: string): boolean {
   const inquiries = getInquiries();
   const filtered = inquiries.filter((i) => i.id !== id);
-  if (filtered.length === inquiries.length) return false;
-
   inMemoryInquiries = filtered;
   try {
     const { inquiries: inqPath } = getDbPaths();
@@ -240,14 +279,19 @@ export function deleteInquiry(id: string): boolean {
 // BOOKING OPERATIONS
 // ==========================================
 export async function getBookingsAsync(): Promise<DbBooking[]> {
-  if (firestoreDb && isFirebaseConfigured) {
+  const db = firestoreDb;
+  if (db && isFirebaseConfigured) {
     try {
-      const colRef = collection(firestoreDb, "bookings");
+      const colRef = collection(db, "bookings");
       const q = query(colRef, orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
       const items: DbBooking[] = [];
       snapshot.forEach((docSnap) => {
-        items.push(docSnap.data() as DbBooking);
+        const data = docSnap.data() as DbBooking;
+        items.push({
+          ...data,
+          id: data.id || docSnap.id,
+        });
       });
       if (items.length > 0) {
         inMemoryBookings = items;
@@ -293,7 +337,6 @@ export function isSlotBooked(date: string, time: string): boolean {
 }
 
 export async function createBookingAsync(data: Omit<DbBooking, "id" | "createdAt" | "status">): Promise<DbBooking | null> {
-  // Prevent double booking conflict
   if (isSlotBooked(data.date, data.time)) {
     return null;
   }
@@ -313,10 +356,10 @@ export async function createBookingAsync(data: Omit<DbBooking, "id" | "createdAt
     console.warn("[DB] Booking write exception:", e);
   }
 
-  // Firebase Firestore Direct Sync
-  if (firestoreDb && isFirebaseConfigured) {
+  const db = firestoreDb;
+  if (db && isFirebaseConfigured) {
     try {
-      await setDoc(doc(firestoreDb, "bookings", newBooking.id), newBooking);
+      await setDoc(doc(db, "bookings", newBooking.id), newBooking);
       console.log(`[Firebase] Booking ${newBooking.id} successfully saved to Firestore!`);
     } catch (err: any) {
       console.warn("[Firebase] Error saving booking to Firestore (Check security rules):", err?.message);
@@ -343,8 +386,9 @@ export function createBooking(data: Omit<DbBooking, "id" | "createdAt" | "status
     const { bookings } = getDbPaths();
     safeWrite(bookings, JSON.stringify(inMemoryBookings, null, 2));
 
-    if (firestoreDb && isFirebaseConfigured) {
-      setDoc(doc(firestoreDb, "bookings", newBooking.id), newBooking).catch((err) =>
+    const db = firestoreDb;
+    if (db && isFirebaseConfigured) {
+      setDoc(doc(db, "bookings", newBooking.id), newBooking).catch((err) =>
         console.warn("[Firebase] Background Firestore booking write error:", err?.message)
       );
     }
@@ -355,15 +399,38 @@ export function createBooking(data: Omit<DbBooking, "id" | "createdAt" | "status
 }
 
 export async function updateBookingStatusAsync(id: string, status: DbBooking["status"]): Promise<DbBooking | null> {
-  const updated = updateBookingStatus(id, status);
-  if (firestoreDb && isFirebaseConfigured && updated) {
+  updateBookingStatus(id, status);
+
+  const db = firestoreDb;
+  if (db && isFirebaseConfigured) {
     try {
-      await updateDoc(doc(firestoreDb, "bookings", id), { status });
+      await updateDoc(doc(db, "bookings", id), { status });
     } catch (e: any) {
-      console.warn("[Firebase] Error updating booking in Firestore:", e?.message);
+      try {
+        const colRef = collection(db, "bookings");
+        const q = query(colRef, where("id", "==", id));
+        const snap = await getDocs(q);
+        for (const d of snap.docs) {
+          await updateDoc(doc(db, "bookings", d.id), { status });
+        }
+      } catch (err2) {
+        console.warn("[Firebase] Error updating booking in Firestore:", err2);
+      }
     }
   }
-  return updated;
+
+  const found = inMemoryBookings.find((b) => b.id === id);
+  return found || {
+    id,
+    name: "",
+    email: "",
+    type: "",
+    date: "",
+    time: "",
+    platform: "",
+    createdAt: new Date().toISOString(),
+    status,
+  };
 }
 
 export function updateBookingStatus(id: string, status: DbBooking["status"]): DbBooking | null {
@@ -383,22 +450,31 @@ export function updateBookingStatus(id: string, status: DbBooking["status"]): Db
 }
 
 export async function deleteBookingAsync(id: string): Promise<boolean> {
-  const deleted = deleteBooking(id);
-  if (firestoreDb && isFirebaseConfigured) {
+  deleteBooking(id);
+
+  const db = firestoreDb;
+  if (db && isFirebaseConfigured) {
     try {
-      await deleteDoc(doc(firestoreDb, "bookings", id));
+      await deleteDoc(doc(db, "bookings", id));
     } catch (e: any) {
-      console.warn("[Firebase] Error deleting booking in Firestore:", e?.message);
+      try {
+        const colRef = collection(db, "bookings");
+        const q = query(colRef, where("id", "==", id));
+        const snap = await getDocs(q);
+        for (const d of snap.docs) {
+          await deleteDoc(doc(db, "bookings", d.id));
+        }
+      } catch (err2) {
+        console.warn("[Firebase] Error deleting booking in Firestore:", err2);
+      }
     }
   }
-  return deleted;
+  return true;
 }
 
 export function deleteBooking(id: string): boolean {
   const bookings = getBookings();
   const filtered = bookings.filter((b) => b.id !== id);
-  if (filtered.length === bookings.length) return false;
-
   inMemoryBookings = filtered;
   try {
     const { bookings: bkPath } = getDbPaths();
